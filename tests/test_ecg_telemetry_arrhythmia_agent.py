@@ -3,9 +3,13 @@ Automated Pytest Test Suite for Ecg Telemetry Arrhythmia Agent.
 Domain: Long-Horizon Agent Context & State Architecture
 Standard: Autonomous Agent State Machine & Token Economy RFC
 """
+import os
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Set audit secret key before importing agents that use it at module level
+os.environ.setdefault("AUDIT_SECRET_KEY", "test-audit-secret-key-for-pytest-only")
 
 import pytest
 from agents.base import PHIGuard, AuditLogger, SecurityException
@@ -63,3 +67,42 @@ def test_supervisor_consensus_and_audit():
     assert main(["audit", "--task-id", "CLI-TEST-01"]) == 0
     assert main(["chat", "Explain", "specifications"]) == 0
     assert main(["verify-audit"]) == 0
+
+
+def test_metric_validation_rejects_nan():
+    """Ensure NaN metric values are rejected by validation."""
+    import pytest
+    import math
+    with pytest.raises(ValueError, match="finite"):
+        SystemTaskPayload(
+            task_id="T-NAN",
+            target_identifier="KEY-01",
+            primary_metric=float("nan")
+        )
+
+
+def test_metric_validation_rejects_infinity():
+    """Ensure infinite metric values are rejected by validation."""
+    import pytest
+    with pytest.raises(ValueError, match="finite"):
+        SystemTaskPayload(
+            task_id="T-INF",
+            target_identifier="KEY-01",
+            primary_metric=float("inf")
+        )
+
+
+def test_batch_processing_handles_missing_file():
+    """Ensure batch command handles missing input file gracefully."""
+    result = main(["batch", "-i", "nonexistent_file.csv"])
+    assert result == 1
+
+
+def test_phi_redaction():
+    """Ensure PHI is properly redacted from text."""
+    dirty = "Patient John Doe MRN-12345678 has SSN 123-45-6789"
+    redacted = PHIGuard.redact_phi(dirty)
+    assert "John Doe" not in redacted
+    assert "MRN-12345678" not in redacted
+    assert "123-45-6789" not in redacted
+    assert "[REDACTED_IDENTIFIER]" in redacted

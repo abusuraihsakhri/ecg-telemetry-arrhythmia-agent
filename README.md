@@ -80,6 +80,22 @@ python cli.py --task-id <value> --target <value> --primary <value> --secondary <
 
 ---
 
+## 🔧 Configuration
+
+The application requires an `AUDIT_SECRET_KEY` environment variable for HMAC-SHA256 audit trail signing. Copy the example file and set your own value:
+
+```bash
+cp .env.example .env
+# Edit .env and set a strong secret key
+```
+
+Generate a secure key:
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+---
+
 ## 🧪 Testing & Verification
 
 Run the automated test suite:
@@ -91,14 +107,22 @@ pytest -v
 Execute high-throughput batch simulation benchmarks:
 
 ```bash
-python simulator.py --tasks 1000 --concurrency 8
+python simulator.py 1000
 ```
 
 ---
 
 ## 🐳 Container Deployment
 
+### Docker
 ```bash
 docker build -t ecg-telemetry-arrhythmia-agent .
-docker run -p 8000:8000 ecg-telemetry-arrhythmia-agent
+docker run -p 8000:8000 -e AUDIT_SECRET_KEY=your-secret-key ecg-telemetry-arrhythmia-agent
+```
+
+### Docker Compose
+```bash
+# Create .env file with your secret key
+echo "AUDIT_SECRET_KEY=your-secret-key" > .env
+docker-compose up -d
 ```
