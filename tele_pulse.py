@@ -11,6 +11,7 @@ License: MIT
 import argparse
 import csv
 import datetime
+import math
 import sys
 import uuid
 from typing import Dict, Any, List, Optional
@@ -69,6 +70,8 @@ class RRPauseDetectorAgent:
     def evaluate(self, payload: Dict[str, Any]) -> List[AgentAlert]:
         alerts = []
         val1 = float(payload.get("metric_primary", 15.0))
+        if not math.isfinite(val1):
+            raise ValueError("metric_primary must be finite")
         if val1 > 20.0:
             alerts.append(
                 AgentAlert(
@@ -87,8 +90,18 @@ class EctopyFrequencyAgent:
     """Specialized Sub-Agent 2 for ecg-telemetry-arrhythmia-agent"""
     def evaluate(self, payload: Dict[str, Any]) -> List[AgentAlert]:
         alerts = []
-        is_critical = bool(payload.get("critical_flag", False))
+        raw_critical = payload.get("critical_flag", False)
+        if isinstance(raw_critical, bool):
+            is_critical = raw_critical
+        elif str(raw_critical).strip().lower() in ("true", "1", "yes"):
+            is_critical = True
+        elif str(raw_critical).strip().lower() in ("false", "0", "no", ""):
+            is_critical = False
+        else:
+            raise ValueError("critical_flag must be a boolean")
         val2 = float(payload.get("metric_secondary", 5.0))
+        if not math.isfinite(val2):
+            raise ValueError("metric_secondary must be finite")
         if is_critical or val2 > 12.0:
             alerts.append(
                 AgentAlert(
@@ -141,7 +154,12 @@ class TelemetryCoordinator:
         critical_count = sum(1 for a in all_alerts if a.severity == Severity.CRITICAL)
         warning_count = sum(1 for a in all_alerts if a.severity == Severity.WARNING)
 
-        overall_status = "CRITICAL_ACTION_REQUIRED" if critical_count > 0 else ("WARNING_ACTIVE" if warning_count > 0 else "CONCORDANT_NORMAL")
+        overall_status = (
+            "CRITICAL_ACTION_REQUIRED" if critical_count
+            else "WARNING_ACTIVE" if warning_count
+            else "ADVISORY_ACTIVE" if all_alerts
+            else "CONCORDANT_NORMAL"
+        )
 
         dossier = {
             "system": "ecg-telemetry-arrhythmia-agent",
