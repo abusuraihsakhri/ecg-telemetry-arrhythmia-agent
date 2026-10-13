@@ -10,6 +10,8 @@ coordinator = TelemetryCoordinator()
 def create_app():
     try:
         from fastapi import FastAPI
+        from fastapi.exceptions import RequestValidationError
+        from fastapi.responses import JSONResponse
         from pydantic import BaseModel, Field
 
         app = FastAPI(
@@ -30,6 +32,17 @@ def create_app():
 
         class ChatRequest(BaseModel):
             query: str
+
+        @app.exception_handler(RequestValidationError)
+        async def handle_invalid_request(_request, exc):
+            # Do not echo untrusted inputs or non-JSON float values in error bodies.
+            errors = [
+                {"loc": [str(part) for part in err.get("loc", ())],
+                 "type": err.get("type", "invalid"),
+                 "msg": err.get("msg", "Invalid input")}
+                for err in exc.errors()
+            ]
+            return JSONResponse(status_code=422, content={"detail": errors})
 
         @app.get("/health")
         def health():
