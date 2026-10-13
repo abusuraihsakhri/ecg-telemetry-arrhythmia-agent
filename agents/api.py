@@ -3,6 +3,8 @@ FastAPI REST API Server for Ecg Telemetry Arrhythmia Agent.
 """
 from typing import Dict, Any, List
 from fastapi import FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from .base import AuditLogger, PHIGuard
 from .models import SystemTaskPayload, ConsensusDossier
@@ -19,6 +21,19 @@ app = FastAPI(
 
 class ChatRequest(BaseModel):
     query: str
+
+
+@app.exception_handler(RequestValidationError)
+async def handle_invalid_request(_request, exc):
+    # Preserve validation location and message, never echo raw untrusted inputs.
+    return JSONResponse(status_code=422, content={
+        "detail": [
+            {"loc": [str(part) for part in err.get("loc", ())],
+             "type": err.get("type", "invalid"),
+             "msg": err.get("msg", "Invalid input")}
+            for err in exc.errors()
+        ]
+    })
 
 
 @app.get("/health")
