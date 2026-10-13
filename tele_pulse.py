@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 TelePulse: Autonomous Inpatient Continuous Telemetry Arrhythmia Supervisor
-Monitors 12-lead and continuous telemetry streams for pause (>3s), R-on-T premature beats, polymorphic VT, and silent nocturnal AF burden.
+Evaluates generic synthetic thresholds; it does not process ECG recordings or diagnose arrhythmias.
 
 Domain: Cardiology
 Author: Dr. Abu Suraih Sakhri
@@ -32,8 +32,8 @@ class Severity(str):
 class DomainKnowledgeRegistry:
     """Enterprise domain rules, guideline matrices, and evidence benchmarks."""
     SYSTEM_VERSION = "2.0.0-PRO-CLINICAL"
-    ZERO_PHI_COMPLIANCE = True
-    HIPAA_SAFE_HARBOR = "ACTIVE_ON_PREMISES"
+    ZERO_PHI_COMPLIANCE = False
+    HIPAA_SAFE_HARBOR = "NOT_VERIFIED"
 
     @staticmethod
     def audit_security_and_integrity(payload: Dict[str, Any]) -> List[str]:
@@ -182,9 +182,9 @@ class TelemetryCoordinator:
         if "summary" in q or "status" in q:
             return f"TelePulse: Autonomous Inpatient Continuous Telemetry Arrhythmia Supervisor currently tracking {len(self.case_registry)} cases in local air-gapped memory."
         elif "guidelines" in q or "protocol" in q:
-            return "All sub-agents operate under validated consensus clinical algorithms and CAP/CLSI/NCCN/WHO standards."
+            return "Rules are synthetic demonstrations, not clinically validated guidelines or protocols."
         else:
-            return f"TelePulse: Autonomous Inpatient Continuous Telemetry Arrhythmia Supervisor executive agent online. Continuous supervisory monitoring active across all domain parameters."
+            return f"TelePulse: Autonomous Inpatient Continuous Telemetry Arrhythmia Supervisor synthetic rule evaluator ready; continuous waveform monitoring is not implemented."
 
 
 coordinator = TelemetryCoordinator()
@@ -197,7 +197,7 @@ def create_app():
 
         app = FastAPI(
             title="TelePulse: Autonomous Inpatient Continuous Telemetry Arrhythmia Supervisor",
-            description="Monitors 12-lead and continuous telemetry streams for pause (>3s), R-on-T premature beats, polymorphic VT, and silent nocturnal AF burden.",
+            description="Evaluates numeric demonstration rules; it does not process ECG waveforms.",
             version="1.0.0",
         )
 
