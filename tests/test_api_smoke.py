@@ -26,6 +26,9 @@ def test_generic_audit_endpoint_and_hmac_verification():
     assert len(result["audit_hash"]) == 64
     assert client.get("/api/audit/logs").json()["verified"] is True
     assert client.get("/metrics").status_code == 200
+    invalid = client.post("/api/audit", content='{"task_id":"SYNTH","target_identifier":"SYNTH","primary_metric":NaN}', headers={"Content-Type": "application/json"})
+    assert invalid.status_code == 422
+    assert "input" not in invalid.text
 
 
 def test_package_api_rejects_nonfinite_metrics():
