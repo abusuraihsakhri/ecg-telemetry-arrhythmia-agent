@@ -93,7 +93,7 @@ class TelemetryCoordinator:
             "stat_critical_alerts": stat_count,
             "warning_alerts": warn_count,
             "alerts": [a.to_dict() for a in all_alerts],
-            "guideline_standard": "ACC / AHA / ASE Valvular & Telemetry Guidelines",
+            "guideline_standard": "Demonstration thresholds (not clinically validated)",
             "consensus_summary": f"Multi-agent supervision completed across 3 sub-agents with status [{status.value}].",
         }
 
@@ -105,6 +105,6 @@ class TelemetryCoordinator:
         if "status" in q or "summary" in q:
             return f"TelePulse: Autonomous Inpatient Continuous Telemetry Arrhythmia Supervisor currently tracking {len(self.case_registry)} cases in on-premises memory."
         elif "guideline" in q or "standard" in q:
-            return "Active clinical surveillance operates under ACC / AHA / ASE Valvular & Telemetry Guidelines validated protocols."
+            return "This is a synthetic threshold-rule demonstration, not a validated clinical protocol."
         else:
-            return f"TelePulse: Autonomous Inpatient Continuous Telemetry Arrhythmia Supervisor executive agent online. Zero-PHI air-gapped monitoring active."
+            return f"TelePulse: Autonomous Inpatient Continuous Telemetry Arrhythmia Supervisor local synthetic metric evaluator ready; identifiable patient data are not supported."
