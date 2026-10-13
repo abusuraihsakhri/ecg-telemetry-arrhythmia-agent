@@ -24,7 +24,7 @@ def create_app():
             primary_metric: float = Field(default=24.5, allow_inf_nan=False)
             secondary_metric: float = Field(default=14.0, allow_inf_nan=False)
             status_flag: str = "DISCORDANT"
-            is_stat: bool = True
+            is_stat: bool = False
             clinical_notes: str = ""
             biomarkers: Dict[str, Any] = {}
 
