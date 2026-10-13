@@ -10,26 +10,39 @@ coordinator = TelemetryCoordinator()
 def create_app():
     try:
         from fastapi import FastAPI
-        from pydantic import BaseModel
+        from fastapi.exceptions import RequestValidationError
+        from fastapi.responses import JSONResponse
+        from pydantic import BaseModel, Field
 
         app = FastAPI(
             title="TelePulse: Autonomous Inpatient Continuous Telemetry Arrhythmia Supervisor",
-            description="Monitors 12-lead and continuous telemetry streams for pause (>3s), R-on-T premature beats, polymorphic VT, and silent nocturnal AF burden.",
+            description="Demonstrates simple numeric thresholds and status rules on synthetic data; does not process ECG waveforms.",
             version="2.0.0-PRO",
         )
 
         class AuditRequest(BaseModel):
             case_id: str = "CASE-2026-001"
             patient_synthetic_id: str = "SYNTH-PT-881"
-            primary_metric: float = 24.5
-            secondary_metric: float = 14.0
+            primary_metric: float = Field(default=24.5, allow_inf_nan=False)
+            secondary_metric: float = Field(default=14.0, allow_inf_nan=False)
             status_flag: str = "DISCORDANT"
-            is_stat: bool = True
+            is_stat: bool = False
             clinical_notes: str = ""
             biomarkers: Dict[str, Any] = {}
 
         class ChatRequest(BaseModel):
             query: str
+
+        @app.exception_handler(RequestValidationError)
+        async def handle_invalid_request(_request, exc):
+            # Do not echo untrusted inputs or non-JSON float values in error bodies.
+            errors = [
+                {"loc": [str(part) for part in err.get("loc", ())],
+                 "type": err.get("type", "invalid"),
+                 "msg": err.get("msg", "Invalid input")}
+                for err in exc.errors()
+            ]
+            return JSONResponse(status_code=422, content={"detail": errors})
 
         @app.get("/health")
         def health():

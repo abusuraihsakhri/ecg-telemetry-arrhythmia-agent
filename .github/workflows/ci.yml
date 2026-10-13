@@ -1,44 +1,58 @@
-name: Ecg Telemetry Arrhythmia Engine CI/CD & Security Verification
+name: Python and browser checks
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [master, main]
   pull_request:
-    branches: [ master, main ]
+    branches: [master, main]
 
 jobs:
-  test-and-audit:
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
 
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install fastapi uvicorn pydantic pytest
-
-    - name: Run Pytest Suite
-      env:
-        AUDIT_SECRET_KEY: ci-test-audit-secret-key-2026
-      run: |
-        pytest -v
-
-    - name: Security SAST & Zero-PHI Audit
-      env:
-        AUDIT_SECRET_KEY: ci-test-audit-secret-key-2026
-      run: |
-        python -c "
-        from agents.base import PHIGuard, AuditLogger
-        import pytest
-        assert AuditLogger.verify_integrity() is True
-        print('Security & Zero-PHI Audit Passed!')
-        "
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[server,test]"
+          python -m pip check
+      - name: Compile Python source
+        run: python -m compileall -q agents ecg_telemetry_arrhythmia_agent cli.py tele_pulse.py enrichment.py simulator.py
+      - name: Run tests with ephemeral audit signing key
+        run: |
+          export AUDIT_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_hex(32))')"
+          python -m pytest -q
+      - name: Validate inline browser JavaScript syntax
+        run: |
+          python - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          class InlineScript(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.active = False
+                  self.parts = []
+              def handle_starttag(self, tag, attrs):
+                  if tag == "script" and not dict(attrs).get("src"):
+                      self.active = True
+              def handle_endtag(self, tag):
+                  if tag == "script":
+                      self.active = False
+              def handle_data(self, data):
+                  if self.active:
+                      self.parts.append(data)
+          parser = InlineScript()
+          parser.feed(Path("web/index.html").read_text(encoding="utf-8"))
+          assert parser.parts, "No inline JavaScript found"
+          Path("/tmp/ecg-telemetry-web.js").write_text("\n".join(parser.parts), encoding="utf-8")
+          PY
+          node --check /tmp/ecg-telemetry-web.js
+          node tests/browser_smoke.cjs

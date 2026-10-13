@@ -1,9 +1,10 @@
 """
 Clinical Data Models & Enums for TelePulse: Autonomous Inpatient Continuous Telemetry Arrhythmia Supervisor.
 Domain: Cardiology
-Standard: ACC / AHA / ASE Valvular & Telemetry Guidelines
+Standard: Demonstration thresholds (not clinically validated)
 """
 import datetime
+import math
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Any
@@ -34,6 +35,12 @@ class ClinicalCasePayload:
     biomarkers: Dict[str, Any] = field(default_factory=dict)
     timestamp: str = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
 
+    def __post_init__(self) -> None:
+        for name in ("primary_metric", "secondary_metric"):
+            value = getattr(self, name)
+            if not isinstance(value, (int, float)) or not math.isfinite(value):
+                raise ValueError(f"{name} must be a finite number")
+
 
 @dataclass
 class AgentAlert:
@@ -43,7 +50,7 @@ class AgentAlert:
     title: str
     clinical_finding: str
     actionable_recommendation: str
-    guideline_citation: str = "ACC / AHA / ASE Valvular & Telemetry Guidelines"
+    guideline_citation: str = "Demonstration thresholds (not clinically validated)"
     timestamp: str = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
 
     def to_dict(self) -> Dict[str, Any]:

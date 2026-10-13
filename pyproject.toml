@@ -1,11 +1,11 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ecg-telemetry-arrhythmia-engine"
+name = "ecg-telemetry-arrhythmia-agent"
 version = "2.0.0"
-description = "TelePulse: Autonomous Inpatient Continuous Telemetry Arrhythmia Supervisor"
+description = "Synthetic ECG telemetry threshold-rule demonstration and Python evaluation utilities"
 readme = "README.md"
 authors = [{ name = "Dr. Abu Suraih Sakhri", email = "abusuraih@example.com" }]
 license = { text = "MIT" }
@@ -13,15 +13,28 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+    "Topic :: Scientific/Engineering :: Medical Science Apps",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 requires-python = ">=3.9"
-dependencies = []
+dependencies = ["pydantic>=2,<3"]
+
+[project.optional-dependencies]
+server = ["fastapi>=0.110,<1", "uvicorn>=0.27,<1"]
+test = ["pytest>=8,<10", "httpx>=0.27,<1", "fastapi>=0.110,<1", "uvicorn>=0.27,<1"]
+
+[tool.setuptools]
+py-modules = [
+  "cli", "tele_pulse", "enrichment", "simulator",
+  "ecg_telemetry_arrhythmia_agent_app", "tele_pulse_app",
+]
+
+[tool.setuptools.packages.find]
+include = ["agents", "agents.*", "ecg_telemetry_arrhythmia_agent", "ecg_telemetry_arrhythmia_agent.*"]
 
 [project.scripts]
 ecg-telemetry-arrhythmia-engine = "ecg_telemetry_arrhythmia_agent.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/abusuraihsakhri/ecg-telemetry-arrhythmia-engine"
-Repository = "https://github.com/abusuraihsakhri/ecg-telemetry-arrhythmia-engine.git"
+Homepage = "https://github.com/abusuraihsakhri/ecg-telemetry-arrhythmia-agent"
+Repository = "https://github.com/abusuraihsakhri/ecg-telemetry-arrhythmia-agent.git"
