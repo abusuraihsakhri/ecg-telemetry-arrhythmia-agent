@@ -1,128 +1,81 @@
 # ECG Telemetry Arrhythmia Agent
 
-> **Domain:** Autonomous Agent Systems & Context State Architecture  
-> **Reference Guidelines & Standards:** `Distributed Systems RFC & State Machine Verification`
+This repository contains **experimental, rule-based Python evaluation utilities** and a static browser demonstration. They accept synthetic numeric metrics and flags; they **do not ingest ECG waveforms** or detect actual cardiac arrhythmias. The current thresholds are demonstration constants, **not validated clinical cutoffs**.
 
-<div align="center">
+**Not for diagnosis, clinical alarm routing, or patient care.** No accuracy, sensitivity, specificity, regulatory approval, HIPAA compliance, or clinical validation is established.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB.svg?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg?logo=fastapi&logoColor=white)
-![Audit Trail](https://img.shields.io/badge/Audit-HMAC--SHA256_Tamper--Evident-brightgreen.svg)
-![Zero-PHI Guard](https://img.shields.io/badge/Guard-Zero--PHI_Outbound-blue.svg)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)
+## Browser demonstration
 
-</div>
+Open [`web/index.html`](web/index.html) locally in a modern browser. Select **Local browser demo** (default), enter synthetic inputs, evaluate the three rules and optionally export the JSON report. The local mode requires no server, dependencies, or network access and produces **no HMAC signature**.
 
----
+The interface also offers **Connected API** mode for an application independently hosted at the same origin with a `POST /api/audit` endpoint. The static GitHub Pages version uses local mode by default. API mode will report connection errors instead of fabricating responses.
 
-## 📖 What It Does
+The browser rules follow the separate generic-worker demonstration: primary metric >25; secondary metric >12 or the synthetic critical flag; selected status-descriptor keywords. Metrics have arbitrary units. This is **not** equivalent to the independent `tele_pulse.py` or package-coordinator rules, which currently use different thresholds.
 
-**ECG Telemetry Arrhythmia Agent** is an advanced analytical and computational platform implementing Continuous Inpatient Telemetry Pause & AF Burden Monitor.
+## Python setup
 
----
-
-## ⚙️ Key Capabilities & Algorithmic Modules
-
-### 🔬 Core Algorithmic & Evaluation Engines
-
-- **`Severity`** — dedicated module for severity evaluation and state verification.
-- **`DomainKnowledgeRegistry`**: Enterprise domain rules, guideline matrices, and evidence benchmarks.
-- **`AgentAlert`** — dedicated module for agent alert evaluation and state verification.
-- **`RRPauseDetectorAgent`**: Specialized Sub-Agent 1 for ecg-telemetry-arrhythmia-agent
-- **`EctopyFrequencyAgent`**: Specialized Sub-Agent 2 for ecg-telemetry-arrhythmia-agent
-- **`QTcDriftTrackerAgent`**: Specialized Sub-Agent 3 for ecg-telemetry-arrhythmia-agent
-
----
-
-## 💻 CLI Quickstart & Usage
-
-### 1. Guided Interactive Mode
-```bash
-python cli.py
-```
-
-### 2. Direct Parameterized Evaluation
-```bash
-python cli.py --task-id <value> --target <value> --primary <value> --secondary <value>
-```
-
-### Parameter Reference
-- `--task-id`: Specifies input measurement or parameter value.
-- `--target`: Specifies input measurement or parameter value.
-- `--primary`: Specifies input measurement or parameter value.
-- `--secondary`: Specifies input measurement or parameter value.
-- `--critical`: Specifies input measurement or parameter value.
-- `--status`: Specifies input measurement or parameter value.
-- `--input`: Specifies input measurement or parameter value.
-- `--output`: Specifies input measurement or parameter value.
-
-### Input Data Schema
-
-| Field | Description | Requirement |
-|:------|:------------|:------------|
-| `case_id` | Parameter / observation metric | Required |
-| `patient_synthetic_id` | Parameter / observation metric | Required |
-| `metric_primary` | Parameter / observation metric | Required |
-| `metric_secondary` | Parameter / observation metric | Required |
-| `is_stat` | Parameter / observation metric | Required |
-| `status_flag` | Parameter / observation metric | Required |
-
----
-
-## 🛡️ Security & Enterprise Architecture
-
-* **Zero-PHI Outbound Interceptor:** Active AST and regex inspection blocking SSNs, MRNs, phone numbers, and patient identifiers.
-* **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs for every evaluation and state transition.
-* **Air-Gapped LLM Reasoning Adapter:** Agnostic integration for local Ollama instances (`llama3`, `mistral`), Claude 3.5 Sonnet, GPT-4o, and deterministic test mocks.
-* **Active Learning Bayesian Calibration:** Dynamic tracker updating worker reliability weights and monitoring Brier calibration drift.
-* **FastAPI & Prometheus Telemetry:** Exposes OpenAPI 3.1 REST endpoints and operational Prometheus metrics (`/metrics`).
-
----
-
-## 🔧 Configuration
-
-The application requires an `AUDIT_SECRET_KEY` environment variable for HMAC-SHA256 audit trail signing. Copy the example file and set your own value:
+Requires Python 3.9 or later.
 
 ```bash
-cp .env.example .env
-# Edit .env and set a strong secret key
+python -m pip install -e ".[server,test]"
+export AUDIT_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_hex(32))')"
+python -m pytest -q
 ```
 
-Generate a secure key:
-```bash
-python -c "import secrets; print(secrets.token_hex(32))"
-```
+The signing key is required for imports and runs using the **generic** `agents/` pipeline. A new random key is appropriate for local tests. A production audit deployment would additionally require persistent key management and tamper-resistant log storage, which are **not** implemented here.
 
----
+## Existing command-line workflows
 
-## 🧪 Testing & Verification
-
-Run the automated test suite:
+Three separate entry points exist; they have different input schemas and rules:
 
 ```bash
-pytest -v
+# Generic Pydantic workers with in-process HMAC audit log
+python cli.py audit --task-id DEMO-001 --target SYNTH-001 --primary 28 --secondary 13
+python cli.py verify-audit
+
+# Standalone TelePulse demonstration
+python tele_pulse.py audit --case-id SYNTH-001 --primary 24 --secondary 14
+python tele_pulse.py batch -i sample.csv -o results.csv
+
+# Installable package coordinator
+python -m ecg_telemetry_arrhythmia_agent.cli audit --case-id SYNTH-001
+ecg-telemetry-arrhythmia-agent audit --case-id SYNTH-001
 ```
 
-Execute high-throughput batch simulation benchmarks:
+The `python cli.py batch -i ... -o ...` and package CLI batch modes accept CSV, report invalid rows, and export summary columns. Outputs from the three implementations are **not interchangeable**.
+
+## REST API
+
+For **local, synthetic-data testing only**:
 
 ```bash
-python simulator.py 1000
+uvicorn agents.api:app --host 127.0.0.1 --port 8000
+# or use the package-specific app:
+uvicorn ecg_telemetry_arrhythmia_agent.server:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
----
+The generic API exposes `GET /health`, `GET /metrics` (JSON counters), `POST /api/audit`, `POST /api/chat` (mock response), and `GET /api/audit/logs`. Use `/docs` for its generated OpenAPI reference. Neither API includes authentication or access controls. Do **not** expose them on an untrusted network or submit identifiable health data. `agents.base.PHIGuard` is a limited pattern-based filter, **not** comprehensive de-identification.
 
-## 🐳 Container Deployment
+### Audit trail scope
 
-### Docker
+The generic pipeline signs audit-entry metadata and payload hashes using HMAC-SHA256 and now verifies the signatures and hash-chain links. Logs reside in process memory; they are **not persistent, append-only, or tamper-proof**. Restarting the process loses the audit log. Neither the static browser demo nor the other two Python pipelines provide this HMAC audit mechanism.
+
+## Deployment and testing
+
 ```bash
-docker build -t ecg-telemetry-arrhythmia-agent .
-docker run -p 8000:8000 -e AUDIT_SECRET_KEY=your-secret-key ecg-telemetry-arrhythmia-agent
+python -m pytest -q
+python -m compileall -q agents ecg_telemetry_arrhythmia_agent
+docker compose up --build
 ```
 
-### Docker Compose
-```bash
-# Create .env file with your secret key
-echo "AUDIT_SECRET_KEY=your-secret-key" > .env
-docker-compose up -d
-```
+The Docker image runs the generic API on container port 8000. Docker Compose needs `AUDIT_SECRET_KEY` set in a local `.env` file (see `.env.example`). The browser is a separate static application under `web/`, not automatically served by the API. GitHub Actions runs Python tests and browser JavaScript syntax checks, with a separate workflow configured to publish `web/` to GitHub Pages. Deployment requires successful GitHub Pages setup and is not evidence of medical readiness.
+
+No external font, script, or JavaScript package is required by the browser demo. It uses modern browser features (Fetch, Blob download, and standard DOM APIs).
+
+## Limitations
+
+The codebase retains several historical, partly overlapping implementations for compatibility. The `enrichment.py` suite and generic worker labels are rule prototypes, not validated cardiac electrophysiology algorithms. The `agents.llm_factory` implementation returns a deterministic mock for every configured provider; no actual external or local language-model integration is provided. No real-time physiological waveform ingestion, QTc estimation, AF-burden estimation, or ECG annotation pipeline is implemented.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
