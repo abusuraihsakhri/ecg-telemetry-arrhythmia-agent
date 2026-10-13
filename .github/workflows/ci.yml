@@ -55,3 +55,4 @@ jobs:
           Path("/tmp/ecg-telemetry-web.js").write_text("\n".join(parser.parts), encoding="utf-8")
           PY
           node --check /tmp/ecg-telemetry-web.js
+          node tests/browser_smoke.cjs
