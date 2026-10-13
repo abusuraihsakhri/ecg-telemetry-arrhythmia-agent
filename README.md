@@ -1,5 +1,7 @@
 # ECG Telemetry Arrhythmia Agent
 
+### [Open the Live Application →](https://abusuraihsakhri.github.io/ecg-telemetry-arrhythmia-agent/)
+
 This repository contains **experimental, rule-based Python evaluation utilities** and a static browser demonstration. They accept synthetic numeric metrics and flags; they **do not ingest ECG waveforms** or detect actual cardiac arrhythmias. The current thresholds are demonstration constants, **not validated clinical cutoffs**.
 
 **Not for diagnosis, clinical alarm routing, or patient care.** No accuracy, sensitivity, specificity, regulatory approval, HIPAA compliance, or clinical validation is established.
