@@ -1,7 +1,7 @@
 """
 Clinical Data Models & Enums for TelePulse: Autonomous Inpatient Continuous Telemetry Arrhythmia Supervisor.
 Domain: Cardiology
-Standard: ACC / AHA / ASE Valvular & Telemetry Guidelines
+Standard: Demonstration thresholds (not clinically validated)
 """
 import datetime
 import math
@@ -50,7 +50,7 @@ class AgentAlert:
     title: str
     clinical_finding: str
     actionable_recommendation: str
-    guideline_citation: str = "ACC / AHA / ASE Valvular & Telemetry Guidelines"
+    guideline_citation: str = "Demonstration thresholds (not clinically validated)"
     timestamp: str = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
 
     def to_dict(self) -> Dict[str, Any]:
